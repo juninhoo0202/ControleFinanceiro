@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
-import { CircleDollarSign, Eye, EyeOff, RotateCcw, Save, UserRound } from "lucide-vue-next";
+import { CircleDollarSign, Eye, EyeOff, Moon, RotateCcw, Save, Sun, UserRound } from "lucide-vue-next";
 import { useFinanceStore } from "../stores/financeStore";
 import BaseModal from "./BaseModal.vue";
 
@@ -94,6 +94,10 @@ function togglePrivacy() {
             <component :is="store.state.profile.privacy ? EyeOff : Eye" :size="18" />
             Privacidade
           </button>
+          <button class="button neutral" type="button" @click="store.toggleTheme()">
+            <component :is="store.isDarkMode ? Sun : Moon" :size="18" />
+            {{ store.isDarkMode ? "Tema claro" : "Tema escuro" }}
+          </button>
           <button class="button danger" type="button" @click="emit('reset-data')">
             <RotateCcw :size="18" />
             Resetar
@@ -113,6 +117,13 @@ function togglePrivacy() {
         <div>
           <span>Saldo atual</span>
           <strong>{{ displayBalance }}</strong>
+        </div>
+        <div>
+          <span>Tema</span>
+          <strong>
+            <component :is="store.isDarkMode ? Moon : Sun" :size="16" />
+            {{ store.isDarkMode ? "Modo escuro" : "Modo claro" }}
+          </strong>
         </div>
         <div>
           <span>Entradas totais</span>

@@ -72,12 +72,25 @@ function createDefaultState() {
       resetCodeExpiresAt: ""
     },
     settings: {
-      activeMonth: currentMonthKey()
+      activeMonth: currentMonthKey(),
+      theme: "light"
     },
     categories: defaultCategories.map(category => ({ ...category })),
     budgets: [],
     transactions: []
   };
+}
+
+function normalizeTheme(value) {
+  return value === "dark" ? "dark" : "light";
+}
+
+function applyTheme(theme) {
+  if (typeof document === "undefined") return;
+
+  const normalized = normalizeTheme(theme);
+  document.documentElement.dataset.theme = normalized;
+  document.documentElement.style.colorScheme = normalized;
 }
 
 function toMoneyNumber(value) {
@@ -220,7 +233,8 @@ function normalizeLoadedState(saved) {
     settings: {
       activeMonth: /^\d{4}-\d{2}$/.test(String(saved?.settings?.activeMonth || ""))
         ? saved.settings.activeMonth
-        : currentMonthKey()
+        : currentMonthKey(),
+      theme: normalizeTheme(saved?.settings?.theme)
     },
     categories: savedCategories.map(category => normalizeCategory(category)),
     budgets: Array.isArray(saved?.budgets)
@@ -321,11 +335,19 @@ export const useFinanceStore = defineStore("finance", () => {
     { deep: true }
   );
 
+  watch(
+    () => state.settings.theme,
+    value => applyTheme(value),
+    { immediate: true }
+  );
+
   const profileName = computed(() => state.profile.name || "Usuario");
   const hasAccessPin = computed(() => Boolean(state.profile.pinHash));
   const isAuthenticated = computed(() => Boolean(state.profile.authenticated));
   const hasRecoveryEmail = computed(() => Boolean(state.profile.recoveryEmail));
   const activeMonth = computed(() => state.settings.activeMonth);
+  const theme = computed(() => normalizeTheme(state.settings.theme));
+  const isDarkMode = computed(() => theme.value === "dark");
   const activeMonthLabel = computed(() => {
     const [year, month] = activeMonth.value.split("-");
     return new Intl.DateTimeFormat("pt-BR", {
@@ -590,6 +612,14 @@ export const useFinanceStore = defineStore("finance", () => {
     state.settings.activeMonth = month;
   }
 
+  function setTheme(themeName) {
+    state.settings.theme = normalizeTheme(themeName);
+  }
+
+  function toggleTheme() {
+    state.settings.theme = isDarkMode.value ? "light" : "dark";
+  }
+
   function addCategory(name) {
     const cleaned = String(name || "").trim();
     if (!cleaned) {
@@ -833,6 +863,7 @@ export const useFinanceStore = defineStore("finance", () => {
     state.profile.resetCodeHash = nextState.profile.resetCodeHash;
     state.profile.resetCodeExpiresAt = nextState.profile.resetCodeExpiresAt;
     state.settings.activeMonth = nextState.settings.activeMonth;
+    state.settings.theme = nextState.settings.theme;
     state.categories.splice(0, state.categories.length, ...nextState.categories);
     state.budgets.splice(0, state.budgets.length, ...nextState.budgets);
     state.transactions.splice(0, state.transactions.length, ...nextState.transactions);
@@ -883,6 +914,8 @@ export const useFinanceStore = defineStore("finance", () => {
     isAuthenticated,
     hasRecoveryEmail,
     activeMonth,
+    theme,
+    isDarkMode,
     activeMonthLabel,
     monthTransactions,
     monthExpenses,
@@ -918,6 +951,8 @@ export const useFinanceStore = defineStore("finance", () => {
     toInputDate,
     categoryByName,
     setActiveMonth,
+    setTheme,
+    toggleTheme,
     addCategory,
     saveBudget,
     deleteBudget,

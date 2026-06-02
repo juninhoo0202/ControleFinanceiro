@@ -27,6 +27,23 @@
   --mobile-nav-height: 78px;
 }
 
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1724;
+  --surface: #151f2e;
+  --surface-soft: #1b283a;
+  --text: #eef5ff;
+  --muted: #9cacbd;
+  --line: #2d3d52;
+  --primary: #60a5fa;
+  --primary-dark: #93c5fd;
+  --teal: #2dd4bf;
+  --green: #34d399;
+  --red: #fb7185;
+  --amber: #fbbf24;
+  --shadow: 0 16px 34px rgba(0, 0, 0, .24);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -986,6 +1003,111 @@ svg {
   background: #fff5f5;
 }
 
+html[data-theme="dark"] :is(
+  .login-intro-card,
+  .login-card,
+  .workspace-sidebar,
+  .home-hero-panel,
+  .home-metric-card,
+  .panel,
+  .stat-card,
+  .profile-hero-panel,
+  .budget-table-row,
+  .category-select,
+  .category-chip,
+  .transaction-row,
+  .modal-card,
+  .quick-actions button,
+  .mobile-menu-button,
+  .mobile-close-button,
+  .icon-link,
+  .icon-button,
+  input,
+  select,
+  .input-with-icon,
+  .select-with-icon
+) {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="dark"] :is(
+  .login-security-grid > div,
+  .home-balance-summary,
+  .home-health-card,
+  .split-metrics > div,
+  .alert-item,
+  .account-metric-card,
+  .data-vault > div,
+  .summary-stack > div,
+  .category-popover,
+  .category-group,
+  .new-category button,
+  .toggle-row,
+  .recovery-code-panel
+) {
+  color: var(--text);
+  background: var(--surface-soft);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] :is(
+  .login-screen,
+  .workspace-topbar,
+  .modal-header,
+  .mobile-bottom-nav
+) {
+  background: rgba(15, 23, 36, .94);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] :is(
+  .home-health-heading > svg,
+  .home-metric-icon,
+  .panel-heading > svg,
+  .stat-card svg,
+  .icon-link,
+  .icon-button
+) {
+  color: var(--primary);
+  background: #1d2c41;
+  border-color: #34506e;
+}
+
+html[data-theme="dark"] :is(
+  .button.neutral,
+  .button.primary,
+  .segmented-control button
+) {
+  color: var(--text);
+  background: #22324a;
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] :is(
+  .recovery-code-panel small,
+  .toggle-row,
+  .toggle-row span,
+  .data-vault > div,
+  .category-pill,
+  .account-pill
+) {
+  color: var(--muted);
+}
+
+html[data-theme="dark"] .mobile-bottom-nav button.active {
+  color: var(--primary-dark);
+  background: #1d2c41;
+}
+
+html[data-theme="dark"] .icon-button.danger {
+  color: var(--red);
+  background: #3b1e2a;
+  border-color: #633044;
+}
+
 .balance-number {
   display: flex;
   align-items: flex-end;
@@ -1148,6 +1270,30 @@ svg {
   color: #475569;
   background: #e2e8f0;
   border-color: #cbd5e1;
+}
+
+.account-pill.light {
+  color: #b45309;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.account-pill.dark {
+  color: #2563eb;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+html[data-theme="dark"] .account-pill.light {
+  color: #fcd34d;
+  background: #3c2d13;
+  border-color: #6a4f1d;
+}
+
+html[data-theme="dark"] .account-pill.dark {
+  color: #93c5fd;
+  background: #172f54;
+  border-color: #28558d;
 }
 
 .account-actions-panel,
@@ -1647,6 +1793,79 @@ svg {
   --category-icon: var(--teal);
   --category-bg: #ccfbf1;
   --category-line: #99f6e4;
+}
+
+html[data-theme="dark"] .category-tone-green {
+  --category-icon: #7dd3ae;
+  --category-bg: #11392e;
+  --category-line: #1f5d4b;
+}
+
+html[data-theme="dark"] .category-tone-sky {
+  --category-icon: #7dd3fc;
+  --category-bg: #123449;
+  --category-line: #1f5a78;
+}
+
+html[data-theme="dark"] .category-tone-indigo {
+  --category-icon: #a5b4fc;
+  --category-bg: #232b58;
+  --category-line: #38448a;
+}
+
+html[data-theme="dark"] .category-tone-amber {
+  --category-icon: #fcd34d;
+  --category-bg: #3c2d13;
+  --category-line: #6a4f1d;
+}
+
+html[data-theme="dark"] .category-tone-orange {
+  --category-icon: #fdba74;
+  --category-bg: #3f2618;
+  --category-line: #743f1f;
+}
+
+html[data-theme="dark"] .category-tone-rose {
+  --category-icon: #fda4af;
+  --category-bg: #43202c;
+  --category-line: #743246;
+}
+
+html[data-theme="dark"] .category-tone-violet {
+  --category-icon: #c4b5fd;
+  --category-bg: #332652;
+  --category-line: #5b4290;
+}
+
+html[data-theme="dark"] .category-tone-cyan,
+html[data-theme="dark"] .category-tone-teal {
+  --category-icon: #67e8f9;
+  --category-bg: #123a42;
+  --category-line: #1f606c;
+}
+
+html[data-theme="dark"] .category-tone-blue {
+  --category-icon: #93c5fd;
+  --category-bg: #172f54;
+  --category-line: #28558d;
+}
+
+html[data-theme="dark"] .category-tone-lime {
+  --category-icon: #bef264;
+  --category-bg: #273817;
+  --category-line: #496820;
+}
+
+html[data-theme="dark"] .category-tone-pink {
+  --category-icon: #f9a8d4;
+  --category-bg: #432038;
+  --category-line: #74325c;
+}
+
+html[data-theme="dark"] .category-tone-slate {
+  --category-icon: #cbd5e1;
+  --category-bg: #263241;
+  --category-line: #44566c;
 }
 
 .category-chip-grid {

@@ -55,6 +55,22 @@ describe("financeStore", () => {
     expect(store.toInputDate(new Date(2026, 5, 1, 23, 59))).toBe("2026-06-01");
   });
 
+  it("mantem preferencia de tema claro ou escuro", () => {
+    const store = createStore({
+      settings: { activeMonth: "2026-06", theme: "dark" }
+    });
+
+    expect(store.theme).toBe("dark");
+    expect(store.isDarkMode).toBe(true);
+
+    store.toggleTheme();
+    expect(store.theme).toBe("light");
+    expect(store.isDarkMode).toBe(false);
+
+    store.setTheme("dark");
+    expect(store.theme).toBe("dark");
+  });
+
   it("calcula saldo, entradas e saidas do mes separado dos totais gerais", () => {
     const store = createStore();
 

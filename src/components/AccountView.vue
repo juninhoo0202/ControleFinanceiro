@@ -8,9 +8,11 @@ import {
   EyeOff,
   FileUp,
   LogOut,
+  Moon,
   RotateCcw,
   Settings,
   ShieldCheck,
+  Sun,
   UserRound,
   Wallet
 } from "lucide-vue-next";
@@ -36,6 +38,11 @@ const privacyStatus = computed(() => {
   return store.state.profile.privacy
     ? { label: "Saldo oculto", icon: EyeOff, className: "locked" }
     : { label: "Saldo visivel", icon: Eye, className: "open" };
+});
+const themeStatus = computed(() => {
+  return store.isDarkMode
+    ? { label: "Modo escuro", icon: Moon, className: "dark" }
+    : { label: "Modo claro", icon: Sun, className: "light" };
 });
 const accountMetrics = computed(() => [
   {
@@ -154,6 +161,10 @@ async function importBackup(event) {
             <component :is="privacyStatus.icon" :size="16" />
             {{ privacyStatus.label }}
           </span>
+          <span class="account-pill" :class="themeStatus.className">
+            <component :is="themeStatus.icon" :size="16" />
+            {{ themeStatus.label }}
+          </span>
           <span class="account-pill">
             <CalendarDays :size="16" />
             {{ store.activeMonthLabel }}
@@ -178,6 +189,10 @@ async function importBackup(event) {
           <button class="button neutral" type="button" @click="store.togglePrivacy()">
             <component :is="store.state.profile.privacy ? EyeOff : Eye" :size="18" />
             Alternar privacidade
+          </button>
+          <button class="button neutral" type="button" @click="store.toggleTheme()">
+            <component :is="store.isDarkMode ? Sun : Moon" :size="18" />
+            {{ store.isDarkMode ? "Modo claro" : "Modo escuro" }}
           </button>
           <button class="button neutral" type="button" @click="exportBackup">
             <Download :size="18" />
@@ -245,6 +260,13 @@ async function importBackup(event) {
             <strong>
               <component :is="store.state.profile.privacy ? EyeOff : Eye" :size="16" />
               {{ store.state.profile.privacy ? "Ocultando saldo" : "Saldo visivel" }}
+            </strong>
+          </div>
+          <div>
+            <span>Tema</span>
+            <strong>
+              <component :is="store.isDarkMode ? Moon : Sun" :size="16" />
+              {{ store.isDarkMode ? "Modo escuro" : "Modo claro" }}
             </strong>
           </div>
           <div>
