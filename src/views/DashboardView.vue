@@ -12,6 +12,7 @@ import TransactionDetailModal from "../components/TransactionDetailModal.vue";
 import TransactionModal from "../components/TransactionModal.vue";
 import TransactionsView from "../components/TransactionsView.vue";
 import WorkspaceNavigation from "../components/WorkspaceNavigation.vue";
+import { resolveIcon } from "../components/icons";
 import { useFinanceStore } from "../stores/financeStore";
 
 const store = useFinanceStore();
@@ -162,6 +163,29 @@ function resetData() {
     </button>
 
     <div v-if="mobileNavOpen" class="mobile-scrim" @click="mobileNavOpen = false"></div>
+
+    <nav class="mobile-bottom-nav" aria-label="Navegacao principal">
+      <button
+        v-for="item in navigationItems"
+        :key="item.id"
+        type="button"
+        :class="{ active: item.id === activeView }"
+        @click="selectView(item.id)"
+      >
+        <component :is="resolveIcon(item.icon)" :size="20" />
+        <span>{{ item.label }}</span>
+      </button>
+    </nav>
+
+    <button
+      class="mobile-fab"
+      type="button"
+      title="Nova transacao"
+      aria-label="Nova transacao"
+      @click="openTransaction()"
+    >
+      <Plus :size="26" />
+    </button>
 
     <WorkspaceNavigation
       :items="navigationItems"

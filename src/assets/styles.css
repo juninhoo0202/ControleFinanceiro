@@ -24,6 +24,7 @@
   --icon-sm: 18px;
   --icon-md: 22px;
   --icon-lg: 26px;
+  --mobile-nav-height: 78px;
 }
 
 * {
@@ -45,6 +46,7 @@ body {
   font-size: var(--font-body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
   text-rendering: geometricPrecision;
 }
 
@@ -2790,7 +2792,9 @@ input::placeholder {
 
 .mobile-menu-button,
 .mobile-close-button,
-.mobile-scrim {
+.mobile-scrim,
+.mobile-bottom-nav,
+.mobile-fab {
   display: none;
 }
 
@@ -3203,5 +3207,196 @@ input::placeholder {
   .danger-zone,
   .account-danger-panel {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .finance-workspace {
+    min-height: 100dvh;
+  }
+
+  .workspace-main {
+    padding-bottom: calc(var(--mobile-nav-height) + 28px + env(safe-area-inset-bottom));
+  }
+
+  .workspace-topbar {
+    min-height: 64px;
+    padding: 12px 14px;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .workspace-topbar > div:first-child {
+    min-width: 0;
+  }
+
+  .workspace-topbar span {
+    font-size: 12px;
+  }
+
+  .workspace-topbar strong {
+    max-width: 48vw;
+    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-actions {
+    width: auto;
+    flex: 0 0 auto;
+    gap: 0;
+  }
+
+  .topbar-actions .icon-link,
+  .mobile-menu-button {
+    display: none;
+  }
+
+  .month-control {
+    width: min(42vw, 150px);
+  }
+
+  .month-control input {
+    min-height: 44px;
+    padding: 0 9px;
+    font-size: 14px;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 34;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, .96);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -12px 26px rgba(23, 32, 51, .12);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-bottom-nav button {
+    display: flex;
+    min-width: 0;
+    min-height: 54px;
+    padding: 5px 4px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav button.active {
+    color: var(--primary-dark);
+    background: #eff6ff;
+  }
+
+  .mobile-bottom-nav button.active svg {
+    color: var(--primary);
+  }
+
+  .mobile-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--mobile-nav-height) + 10px + env(safe-area-inset-bottom));
+    z-index: 36;
+    display: inline-flex;
+    width: 58px;
+    height: 58px;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--green);
+    border: 1px solid rgba(4, 120, 87, .35);
+    border-radius: 50%;
+    box-shadow: 0 16px 32px rgba(16, 185, 129, .32);
+  }
+
+  .home-dashboard {
+    gap: 14px;
+  }
+
+  .home-health-card {
+    align-content: start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .home-health-heading > svg,
+  .panel-heading > svg {
+    width: 38px;
+    height: 38px;
+  }
+
+  .home-metric-card {
+    min-height: auto;
+    padding: 12px;
+  }
+
+  .home-metric-card strong {
+    font-size: 20px;
+  }
+
+  .panel-heading {
+    margin-bottom: 14px;
+  }
+
+  .panel-heading h2 {
+    font-size: 20px;
+  }
+
+  .transaction-row {
+    min-height: auto;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .transaction-icon,
+  .category-mini-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .transaction-side {
+    gap: 8px;
+  }
+
+  .transaction-side .icon-button.small {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chart-panel {
+    min-height: 330px;
+  }
+
+  .chart-shell,
+  .chart-shell.doughnut {
+    height: 250px;
+  }
+
+  .modal-card,
+  .modal-card.modal-wide,
+  .modal-card.modal-compact {
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom));
   }
 }

@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   FileUp,
+  LogOut,
   RotateCcw,
   Settings,
   ShieldCheck,
@@ -185,6 +186,10 @@ async function importBackup(event) {
           <button class="button neutral" type="button" @click="openImport">
             <FileUp :size="18" />
             Importar backup
+          </button>
+          <button class="button neutral" type="button" @click="store.lockAccess()">
+            <LogOut :size="18" />
+            Sair do app
           </button>
         </div>
 
