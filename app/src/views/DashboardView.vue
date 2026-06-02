@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { ListChecks, Menu, Plus, UserRound } from "lucide-vue-next";
+import { ListChecks, LogOut, Menu, Plus, UserRound } from "lucide-vue-next";
 import AccountView from "../components/AccountView.vue";
 import BudgetModal from "../components/BudgetModal.vue";
 import BudgetView from "../components/BudgetView.vue";
@@ -198,6 +198,9 @@ function resetData() {
           <button class="icon-link" type="button" title="Perfil" @click="profileModalOpen = true">
             <UserRound :size="20" />
           </button>
+          <button class="icon-link" type="button" title="Sair" @click="store.lockAccess()">
+            <LogOut :size="20" />
+          </button>
         </div>
       </header>
 
@@ -207,7 +210,6 @@ function resetData() {
         @open-transaction="openTransaction"
         @open-budget="openBudget"
         @open-account="profileModalOpen = true"
-        @select-view="selectView"
         @view-transaction="openTransactionDetails"
         @edit-transaction="openTransaction"
         @delete-transaction="requestTransactionDelete"

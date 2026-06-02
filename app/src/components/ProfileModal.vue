@@ -1,6 +1,6 @@
 <script setup>
-import { reactive, ref, watch } from "vue";
-import { Eye, EyeOff, RotateCcw, Save } from "lucide-vue-next";
+import { computed, reactive, ref, watch } from "vue";
+import { CircleDollarSign, Eye, EyeOff, RotateCcw, Save, UserRound } from "lucide-vue-next";
 import { useFinanceStore } from "../stores/financeStore";
 import BaseModal from "./BaseModal.vue";
 
@@ -18,6 +18,7 @@ defineProps({
 const emit = defineEmits(["close", "reset-data"]);
 const store = useFinanceStore();
 const feedback = ref("");
+const profileInitial = computed(() => store.profileName.slice(0, 1).toUpperCase());
 
 const form = reactive({
   name: store.state.profile.name,
@@ -49,19 +50,34 @@ function togglePrivacy() {
 
 <template>
   <BaseModal :open="open" title="Perfil e saldo" kicker="Conta local" size="wide" @close="emit('close')">
-    <div class="modal-user-grid">
-      <form class="profile-form modal-form" @submit.prevent="saveProfile">
+    <div class="profile-modal-layout">
+      <section class="profile-modal-hero">
+        <span class="profile-avatar">{{ profileInitial }}</span>
+        <div>
+          <span>Perfil atual</span>
+          <h3>{{ store.profileName }}</h3>
+          <p>{{ store.state.profile.privacy ? "Saldo oculto no painel." : "Saldo visivel no painel." }}</p>
+        </div>
+      </section>
+
+      <form class="profile-form modal-form profile-editor-form" @submit.prevent="saveProfile">
         <label class="field">
           <span>Nome</span>
-          <input v-model="form.name" type="text" placeholder="Digite seu nome" />
+          <div class="input-with-icon">
+            <UserRound :size="18" />
+            <input v-model="form.name" type="text" placeholder="Digite seu nome" />
+          </div>
         </label>
 
         <label class="field">
           <span>Saldo inicial da conta</span>
-          <input v-model="form.initialBalance" type="number" step="0.01" min="0" placeholder="0,00" />
+          <div class="input-with-icon">
+            <CircleDollarSign :size="18" />
+            <input v-model="form.initialBalance" type="number" step="0.01" min="0" placeholder="0,00" />
+          </div>
         </label>
 
-        <label class="toggle-row">
+        <label class="toggle-row profile-toggle">
           <input v-model="form.privacy" type="checkbox" />
           <span>
             <component :is="form.privacy ? EyeOff : Eye" :size="18" />
@@ -85,7 +101,7 @@ function togglePrivacy() {
         </div>
       </form>
 
-      <div class="summary-stack modal-summary">
+      <div class="summary-stack modal-summary profile-modal-summary">
         <div>
           <span>Nome</span>
           <strong>{{ store.profileName }}</strong>

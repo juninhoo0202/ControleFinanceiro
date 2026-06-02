@@ -39,7 +39,7 @@ const form = reactive({
 const title = computed(() => (props.transaction ? "Editar transacao" : "Nova transacao"));
 
 function defaultDateForActiveMonth() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = store.toInputDate(new Date());
   return today.startsWith(store.activeMonth) ? today : `${store.activeMonth}-01`;
 }
 

@@ -5,12 +5,12 @@ import {
   ListChecks,
   Plus,
   ReceiptText,
+  ShieldCheck,
   Wallet
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { useFinanceStore } from "../stores/financeStore";
 import { categoryToneClass, resolveIcon } from "./icons";
-import StatCard from "./StatCard.vue";
 import TransactionList from "./TransactionList.vue";
 
 defineProps({
@@ -24,7 +24,6 @@ const emit = defineEmits([
   "open-transaction",
   "open-budget",
   "open-account",
-  "select-view",
   "edit-transaction",
   "delete-transaction",
   "view-transaction"
@@ -32,6 +31,43 @@ const emit = defineEmits([
 const store = useFinanceStore();
 
 const budgetProgress = computed(() => `${Math.min(Math.max(store.budgetUsage, 0), 100)}%`);
+const healthProgress = computed(() => `${Math.min(Math.max(store.health.score, 0), 100)}%`);
+const resultTone = computed(() => (store.monthResult < 0 ? "negative" : "positive"));
+const homeMetrics = computed(() => [
+  {
+    label: "Entradas",
+    value: store.money(store.monthEntriesTotal),
+    copy: "Receitas deste mes",
+    icon: "TrendingUp",
+    tone: "green"
+  },
+  {
+    label: "Saidas",
+    value: store.money(store.monthExpensesTotal),
+    copy: "Despesas deste mes",
+    icon: "TrendingDown",
+    tone: "red"
+  },
+  {
+    label: "Resultado",
+    value: store.money(store.monthResult),
+    copy: "Entradas menos saidas",
+    icon: "Sigma",
+    tone: resultTone.value === "negative" ? "red" : "green"
+  },
+  {
+    label: "Orcamento livre",
+    value: store.money(store.budgetRemaining),
+    copy: `${Math.round(store.budgetUsage)}% do limite usado`,
+    icon: "PiggyBank",
+    tone: store.budgetRemaining < 0 ? "red" : "amber"
+  }
+]);
+const trackedCategories = computed(() => {
+  return store.monthlyCategorySummary
+    .filter(category => category.spent > 0 || category.limit > 0)
+    .slice(0, 5);
+});
 const alerts = computed(() => {
   const items = [];
 
@@ -72,38 +108,74 @@ const alerts = computed(() => {
 </script>
 
 <template>
-  <section class="workspace-section">
-    <div class="section-heading">
-      <div>
+  <section class="workspace-section home-dashboard">
+    <div class="home-hero-panel" :class="store.health.tone">
+      <div class="home-hero-main">
         <span class="kicker">Este mes</span>
         <h1>Resumo financeiro</h1>
         <p>{{ store.activeMonthLabel }} com foco em saldo, limites e proximas decisoes.</p>
+
+        <div class="home-balance-summary">
+          <span>Saldo disponivel</span>
+          <strong>{{ displayBalance }}</strong>
+          <small :class="resultTone">
+            Resultado do mes: {{ store.money(store.monthResult) }}
+          </small>
+        </div>
+
+        <div class="home-hero-actions">
+          <button class="button success" type="button" @click="emit('open-transaction')">
+            <Plus :size="18" />
+            Lancar
+          </button>
+          <button class="button" type="button" @click="emit('open-account')">
+            <Wallet :size="18" />
+            Ajustar saldo
+          </button>
+          <button class="button neutral" type="button" @click="emit('open-budget')">
+            <ListChecks :size="18" />
+            Orcamento
+          </button>
+        </div>
       </div>
 
-      <div class="section-actions">
-        <button class="button success" type="button" @click="emit('open-transaction')">
-          <Plus :size="18" />
-          Lancar
-        </button>
-        <button class="button" type="button" @click="emit('open-account')">
-          <Wallet :size="18" />
-          Ajustar saldo
-        </button>
-        <button class="button neutral" type="button" @click="emit('open-budget')">
-          <ListChecks :size="18" />
-          Orcamento
-        </button>
-      </div>
+      <aside class="home-health-card">
+        <div class="home-health-heading">
+          <ShieldCheck :size="22" />
+          <div>
+            <span>Status do mes</span>
+            <strong>{{ store.health.status }}</strong>
+          </div>
+        </div>
+        <p>{{ store.health.copy }}</p>
+        <div class="home-score">
+          <span>{{ store.health.score }}</span>
+          <div class="progress-track">
+            <i :style="{ width: healthProgress }"></i>
+          </div>
+        </div>
+      </aside>
     </div>
 
-    <div class="stat-grid four compact">
-      <StatCard label="Saldo disponivel" :value="displayBalance" icon="Wallet" tone="blue" />
-      <StatCard label="Entradas do mes" :value="store.money(store.monthEntriesTotal)" icon="TrendingUp" tone="green" />
-      <StatCard label="Saidas do mes" :value="store.money(store.monthExpensesTotal)" icon="TrendingDown" tone="red" />
-      <StatCard label="Restante do orcamento" :value="store.money(store.budgetRemaining)" icon="PiggyBank" tone="amber" />
+    <div class="home-metric-grid">
+      <article
+        v-for="metric in homeMetrics"
+        :key="metric.label"
+        class="home-metric-card"
+        :class="`tone-${metric.tone}`"
+      >
+        <span class="home-metric-icon">
+          <component :is="resolveIcon(metric.icon)" :size="20" />
+        </span>
+        <div>
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <small>{{ metric.copy }}</small>
+        </div>
+      </article>
     </div>
 
-    <div class="home-grid">
+    <div class="home-grid home-primary-grid">
       <article class="panel balance-panel">
         <div class="panel-heading">
           <div>
@@ -164,13 +236,13 @@ const alerts = computed(() => {
           <BarChart3 :size="22" />
         </div>
 
-        <div v-if="store.monthlyCategorySummary.filter(category => category.spent > 0 || category.limit > 0).length === 0" class="empty-state compact">
+        <div v-if="trackedCategories.length === 0" class="empty-state compact">
           Defina limites por categoria para acompanhar o mes.
         </div>
 
         <div v-else class="budget-list">
           <div
-            v-for="category in store.monthlyCategorySummary.filter(item => item.spent > 0 || item.limit > 0).slice(0, 5)"
+            v-for="category in trackedCategories"
             :key="category.name"
             class="budget-row operational"
             :class="{ danger: category.overBudget, pending: category.unplanned }"
@@ -205,21 +277,6 @@ const alerts = computed(() => {
           @delete="emit('delete-transaction', $event)"
         />
       </article>
-    </div>
-
-    <div class="quick-actions">
-      <button type="button" @click="emit('select-view', 'orcamento')">
-        <ListChecks :size="19" />
-        Revisar orcamento
-      </button>
-      <button type="button" @click="emit('select-view', 'transacoes')">
-        <ReceiptText :size="19" />
-        Ver transacoes
-      </button>
-      <button type="button" @click="emit('open-account')">
-        <Wallet :size="19" />
-        Ajustar saldo
-      </button>
     </div>
   </section>
 </template>

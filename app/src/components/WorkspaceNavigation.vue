@@ -38,11 +38,12 @@ const emit = defineEmits(["select", "close"]);
       <span>FP</span>
       <div>
         <strong>FinancePro</strong>
-        <small>Orcamento mensal</small>
+        <small>Controle mensal</small>
       </div>
     </div>
 
     <nav class="main-nav" aria-label="Navegacao principal">
+      <span class="nav-label">Menu</span>
       <button
         v-for="item in items"
         :key="item.id"

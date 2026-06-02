@@ -17,8 +17,46 @@ export const defaultCategories = [
 
 const defaultCategoryById = new Map(defaultCategories.map(category => [category.id, category]));
 
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateKey(date) {
+  return [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate())
+  ].join("-");
+}
+
+function formatMonthKey(date) {
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}`;
+}
+
+function parseLocalDate(value) {
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+
+  if (typeof value === "string") {
+    const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (dateOnly) {
+      const [, year, month, day] = dateOnly;
+      return new Date(Number(year), Number(month) - 1, Number(day), 12);
+    }
+  }
+
+  return value ? new Date(value) : new Date();
+}
+
+function safeLocalDate(value) {
+  const date = parseLocalDate(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
 function currentMonthKey() {
-  return new Date().toISOString().slice(0, 7);
+  return formatMonthKey(new Date());
 }
 
 function createDefaultState() {
@@ -26,7 +64,12 @@ function createDefaultState() {
     profile: {
       name: "",
       initialBalance: 0,
-      privacy: false
+      privacy: false,
+      pinHash: "",
+      authenticated: false,
+      recoveryEmail: "",
+      resetCodeHash: "",
+      resetCodeExpiresAt: ""
     },
     settings: {
       activeMonth: currentMonthKey()
@@ -49,6 +92,52 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+function normalizePin(value) {
+  return String(value || "").replace(/\D/g, "").slice(0, 8);
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
+function hashPin(value) {
+  const pin = normalizePin(value);
+  let hash = 2166136261;
+
+  for (const character of `financepro:${pin}`) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `local-${(hash >>> 0).toString(16)}`;
+}
+
+function hashRecoveryCode(value) {
+  const code = normalizePin(value);
+  let hash = 2166136261;
+
+  for (const character of `financepro-reset:${code}`) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `reset-${(hash >>> 0).toString(16)}`;
+}
+
+function createRecoveryCode() {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const values = new Uint32Array(1);
+    crypto.getRandomValues(values);
+    return String(values[0] % 1000000).padStart(6, "0");
+  }
+
+  return String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
+}
+
 function createId(prefix = "item") {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -58,15 +147,17 @@ function createId(prefix = "item") {
 }
 
 function monthKeyFromDate(value) {
-  const date = value ? new Date(value) : new Date();
+  const date = value ? parseLocalDate(value) : new Date();
   if (Number.isNaN(date.getTime())) return currentMonthKey();
-  return date.toISOString().slice(0, 7);
+  return formatMonthKey(date);
 }
 
 function toInputDate(value) {
-  const date = value ? new Date(value) : new Date();
-  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(0, 10);
-  return date.toISOString().slice(0, 10);
+  return formatDateKey(safeLocalDate(value));
+}
+
+function toStoredDate(value) {
+  return safeLocalDate(value).toISOString();
 }
 
 function normalizeTransaction(transaction) {
@@ -78,9 +169,7 @@ function normalizeTransaction(transaction) {
     categoria: String(transaction?.categoria || "").trim() || "Sem categoria",
     descricao: String(transaction?.descricao || "").trim() || "Sem descricao",
     valor: Math.max(toMoneyNumber(transaction?.valor), 0),
-    data: transaction?.data && !Number.isNaN(new Date(transaction.data).getTime())
-      ? new Date(transaction.data).toISOString()
-      : new Date().toISOString()
+    data: toStoredDate(transaction?.data)
   };
 }
 
@@ -111,39 +200,47 @@ function normalizeCategory(category) {
   };
 }
 
-function loadState() {
+function normalizeLoadedState(saved) {
   const fallback = createDefaultState();
+  const savedCategories = Array.isArray(saved?.categories) && saved.categories.length
+    ? saved.categories
+    : fallback.categories;
 
+  return {
+    profile: {
+      name: saved?.profile?.name || "",
+      initialBalance: toMoneyNumber(saved?.profile?.initialBalance),
+      privacy: Boolean(saved?.profile?.privacy),
+      pinHash: String(saved?.profile?.pinHash || ""),
+      authenticated: false,
+      recoveryEmail: normalizeEmail(saved?.profile?.recoveryEmail),
+      resetCodeHash: "",
+      resetCodeExpiresAt: ""
+    },
+    settings: {
+      activeMonth: /^\d{4}-\d{2}$/.test(String(saved?.settings?.activeMonth || ""))
+        ? saved.settings.activeMonth
+        : currentMonthKey()
+    },
+    categories: savedCategories.map(category => normalizeCategory(category)),
+    budgets: Array.isArray(saved?.budgets)
+      ? saved.budgets.map(normalizeBudget).filter(budget => budget.categoria)
+      : [],
+    transactions: Array.isArray(saved?.transactions)
+      ? saved.transactions.map(normalizeTransaction).filter(transaction => transaction.valor > 0)
+      : []
+  };
+}
+
+function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return fallback;
+    if (!raw) return createDefaultState();
 
     const saved = JSON.parse(raw);
-    const savedCategories = Array.isArray(saved?.categories) && saved.categories.length
-      ? saved.categories
-      : fallback.categories;
-
-    return {
-      profile: {
-        name: saved?.profile?.name || "",
-        initialBalance: toMoneyNumber(saved?.profile?.initialBalance),
-        privacy: Boolean(saved?.profile?.privacy)
-      },
-      settings: {
-        activeMonth: /^\d{4}-\d{2}$/.test(String(saved?.settings?.activeMonth || ""))
-          ? saved.settings.activeMonth
-          : currentMonthKey()
-      },
-      categories: savedCategories.map(category => normalizeCategory(category)),
-      budgets: Array.isArray(saved?.budgets)
-        ? saved.budgets.map(normalizeBudget).filter(budget => budget.categoria)
-        : [],
-      transactions: Array.isArray(saved?.transactions)
-        ? saved.transactions.map(normalizeTransaction).filter(transaction => transaction.valor > 0)
-        : []
-    };
+    return normalizeLoadedState(saved);
   } catch {
-    return fallback;
+    return createDefaultState();
   }
 }
 
@@ -225,6 +322,9 @@ export const useFinanceStore = defineStore("finance", () => {
   );
 
   const profileName = computed(() => state.profile.name || "Usuario");
+  const hasAccessPin = computed(() => Boolean(state.profile.pinHash));
+  const isAuthenticated = computed(() => Boolean(state.profile.authenticated));
+  const hasRecoveryEmail = computed(() => Boolean(state.profile.recoveryEmail));
   const activeMonth = computed(() => state.settings.activeMonth);
   const activeMonthLabel = computed(() => {
     const [year, month] = activeMonth.value.split("-");
@@ -387,7 +487,7 @@ export const useFinanceStore = defineStore("finance", () => {
     return Array.from({ length: daysInMonth }, (_, index) => {
       const day = index + 1;
       const dayTransactions = monthTransactions.value.filter(transaction => {
-        return new Date(transaction.data).getUTCDate() === day;
+        return parseLocalDate(transaction.data).getDate() === day;
       });
       const entradas = dayTransactions
         .filter(transaction => transaction.tipo === "entrada")
@@ -561,7 +661,7 @@ export const useFinanceStore = defineStore("finance", () => {
     const descricao = String(payload.descricao || "").trim();
     const valor = toMoneyNumber(payload.valor);
     const tipo = payload.tipo === "entrada" ? "entrada" : "gasto";
-    const data = payload.data ? new Date(`${payload.data}T12:00:00`) : new Date();
+    const data = payload.data ? parseLocalDate(payload.data) : new Date();
 
     if (!categoria || !descricao || valor <= 0 || Number.isNaN(data.getTime())) {
       return { ok: false, message: "Preencha categoria, descricao, valor e data." };
@@ -573,7 +673,7 @@ export const useFinanceStore = defineStore("finance", () => {
       categoria,
       descricao,
       valor,
-      data: data.toISOString()
+      data: toStoredDate(data)
     };
 
     const index = state.transactions.findIndex(item => item.id === transaction.id);
@@ -606,24 +706,182 @@ export const useFinanceStore = defineStore("finance", () => {
     state.profile.privacy = Boolean(profile.privacy);
   }
 
+  function setupAccess(payload) {
+    const name = String(payload?.name || "").trim();
+    const pin = normalizePin(payload?.pin);
+    const recoveryEmail = normalizeEmail(payload?.recoveryEmail);
+
+    if (!name) {
+      return { ok: false, message: "Informe seu nome." };
+    }
+
+    if (pin.length < 4) {
+      return { ok: false, message: "Crie um PIN com pelo menos 4 numeros." };
+    }
+
+    if (!isValidEmail(recoveryEmail)) {
+      return { ok: false, message: "Informe um e-mail de recuperacao valido." };
+    }
+
+    state.profile.name = name;
+    state.profile.pinHash = hashPin(pin);
+    state.profile.authenticated = true;
+    state.profile.recoveryEmail = recoveryEmail;
+    state.profile.resetCodeHash = "";
+    state.profile.resetCodeExpiresAt = "";
+
+    return { ok: true, message: "Acesso criado." };
+  }
+
+  function unlockAccess(pin) {
+    const cleanedPin = normalizePin(pin);
+
+    if (!state.profile.pinHash) {
+      return { ok: false, message: "Crie seu acesso local primeiro." };
+    }
+
+    if (hashPin(cleanedPin) !== state.profile.pinHash) {
+      return { ok: false, message: "PIN incorreto." };
+    }
+
+    state.profile.authenticated = true;
+    return { ok: true, message: "Acesso liberado." };
+  }
+
+  function lockAccess() {
+    state.profile.authenticated = false;
+  }
+
+  function requestPinReset(email) {
+    const recoveryEmail = normalizeEmail(email);
+
+    if (!state.profile.pinHash) {
+      return { ok: false, message: "Crie seu acesso local primeiro." };
+    }
+
+    if (!isValidEmail(recoveryEmail)) {
+      return { ok: false, message: "Informe um e-mail valido." };
+    }
+
+    if (!state.profile.recoveryEmail) {
+      state.profile.recoveryEmail = recoveryEmail;
+    } else if (recoveryEmail !== state.profile.recoveryEmail) {
+      return { ok: false, message: "E-mail diferente do cadastrado." };
+    }
+
+    const code = createRecoveryCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+    state.profile.resetCodeHash = hashRecoveryCode(code);
+    state.profile.resetCodeExpiresAt = expiresAt;
+
+    return {
+      ok: true,
+      code,
+      email: recoveryEmail,
+      expiresAt,
+      message: "Codigo de recuperacao gerado."
+    };
+  }
+
+  function resetAccessWithCode(payload) {
+    const recoveryEmail = normalizeEmail(payload?.email);
+    const code = normalizePin(payload?.code);
+    const pin = normalizePin(payload?.pin);
+
+    if (!state.profile.resetCodeHash || !state.profile.resetCodeExpiresAt) {
+      return { ok: false, message: "Solicite um codigo antes de trocar o PIN." };
+    }
+
+    if (new Date(state.profile.resetCodeExpiresAt).getTime() < Date.now()) {
+      state.profile.resetCodeHash = "";
+      state.profile.resetCodeExpiresAt = "";
+      return { ok: false, message: "Codigo expirado. Solicite outro." };
+    }
+
+    if (recoveryEmail !== state.profile.recoveryEmail) {
+      return { ok: false, message: "E-mail diferente do cadastrado." };
+    }
+
+    if (hashRecoveryCode(code) !== state.profile.resetCodeHash) {
+      return { ok: false, message: "Codigo incorreto." };
+    }
+
+    if (pin.length < 4) {
+      return { ok: false, message: "Crie um PIN com pelo menos 4 numeros." };
+    }
+
+    state.profile.pinHash = hashPin(pin);
+    state.profile.authenticated = true;
+    state.profile.resetCodeHash = "";
+    state.profile.resetCodeExpiresAt = "";
+
+    return { ok: true, message: "PIN alterado." };
+  }
+
   function togglePrivacy() {
     state.profile.privacy = !state.profile.privacy;
   }
 
+  function applyState(nextState) {
+    state.profile.name = nextState.profile.name;
+    state.profile.initialBalance = nextState.profile.initialBalance;
+    state.profile.privacy = nextState.profile.privacy;
+    state.profile.pinHash = nextState.profile.pinHash;
+    state.profile.authenticated = nextState.profile.authenticated;
+    state.profile.recoveryEmail = nextState.profile.recoveryEmail;
+    state.profile.resetCodeHash = nextState.profile.resetCodeHash;
+    state.profile.resetCodeExpiresAt = nextState.profile.resetCodeExpiresAt;
+    state.settings.activeMonth = nextState.settings.activeMonth;
+    state.categories.splice(0, state.categories.length, ...nextState.categories);
+    state.budgets.splice(0, state.budgets.length, ...nextState.budgets);
+    state.transactions.splice(0, state.transactions.length, ...nextState.transactions);
+  }
+
+  function exportData() {
+    const data = JSON.parse(JSON.stringify(state));
+    data.profile.authenticated = false;
+    data.profile.resetCodeHash = "";
+    data.profile.resetCodeExpiresAt = "";
+
+    return {
+      app: "FinancePro",
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      storageKey: STORAGE_KEY,
+      data
+    };
+  }
+
+  function importData(payload) {
+    try {
+      const source = payload?.data || payload;
+      if (!source || typeof source !== "object" || Array.isArray(source)) {
+        throw new Error("Invalid backup");
+      }
+
+      const imported = normalizeLoadedState(source);
+      imported.profile.authenticated = state.profile.authenticated;
+      imported.profile.pinHash = imported.profile.pinHash || state.profile.pinHash;
+      imported.profile.recoveryEmail = imported.profile.recoveryEmail || state.profile.recoveryEmail;
+      applyState(imported);
+      return { ok: true, message: "Backup importado." };
+    } catch {
+      return { ok: false, message: "Nao foi possivel importar este arquivo." };
+    }
+  }
+
   function resetData() {
     const fresh = createDefaultState();
-    state.profile.name = fresh.profile.name;
-    state.profile.initialBalance = fresh.profile.initialBalance;
-    state.profile.privacy = fresh.profile.privacy;
-    state.settings.activeMonth = fresh.settings.activeMonth;
-    state.categories.splice(0, state.categories.length, ...fresh.categories);
-    state.budgets.splice(0, state.budgets.length);
-    state.transactions.splice(0, state.transactions.length);
+    applyState(fresh);
   }
 
   return {
     state,
     profileName,
+    hasAccessPin,
+    isAuthenticated,
+    hasRecoveryEmail,
     activeMonth,
     activeMonthLabel,
     monthTransactions,
@@ -667,7 +925,14 @@ export const useFinanceStore = defineStore("finance", () => {
     addTransaction,
     deleteTransaction,
     saveProfile,
+    setupAccess,
+    unlockAccess,
+    lockAccess,
+    requestPinReset,
+    resetAccessWithCode,
     togglePrivacy,
+    exportData,
+    importData,
     resetData
   };
 });
