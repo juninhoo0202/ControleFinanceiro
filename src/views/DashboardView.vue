@@ -193,8 +193,17 @@ function resetData() {
       :open="mobileNavOpen"
       :profile-name="store.profileName"
       :balance="displayBalance"
+      :month-label="store.activeMonthLabel"
+      :month-result="store.money(store.monthResult)"
+      :result-negative="store.monthResult < 0"
+      :dark-mode="store.isDarkMode"
       @select="selectView"
       @close="mobileNavOpen = false"
+      @open-transaction="openTransaction"
+      @open-budget="openBudget"
+      @open-profile="profileModalOpen = true"
+      @toggle-theme="store.toggleTheme"
+      @lock="store.lockAccess"
     />
 
     <main class="workspace-main">

@@ -363,6 +363,8 @@ svg {
   gap: 18px;
   background: #fff;
   border-right: 1px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .brand {
@@ -472,6 +474,78 @@ svg {
 .main-nav button.exact svg {
   color: #fff;
   background: var(--primary);
+}
+
+.sidebar-summary {
+  display: grid;
+  gap: 5px;
+  padding: 13px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.sidebar-summary span,
+.sidebar-summary small {
+  color: var(--muted);
+  font-size: var(--font-label);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.sidebar-summary strong {
+  font-size: 24px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-summary small {
+  text-transform: none;
+}
+
+.sidebar-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sidebar-quick-actions button,
+.sidebar-control-list button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-weight: 800;
+}
+
+.sidebar-quick-actions button {
+  min-height: 66px;
+  padding: 8px 6px;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.sidebar-quick-actions button:first-child {
+  color: #047857;
+  background: #d1fae5;
+  border-color: #a7f3d0;
+}
+
+.sidebar-control-list {
+  display: grid;
+  gap: 8px;
+}
+
+.sidebar-control-list button {
+  min-height: 46px;
+  padding: 0 11px;
+  justify-content: flex-start;
+  font-size: var(--font-small);
 }
 
 .sidebar-profile {
@@ -1035,6 +1109,9 @@ html[data-theme="dark"] :is(
 
 html[data-theme="dark"] :is(
   .login-security-grid > div,
+  .sidebar-summary,
+  .sidebar-quick-actions button,
+  .sidebar-control-list button,
   .home-balance-summary,
   .home-health-card,
   .split-metrics > div,
@@ -1106,6 +1183,12 @@ html[data-theme="dark"] .icon-button.danger {
   color: var(--red);
   background: #3b1e2a;
   border-color: #633044;
+}
+
+html[data-theme="dark"] .sidebar-quick-actions button:first-child {
+  color: #7dd3ae;
+  background: #11392e;
+  border-color: #1f5d4b;
 }
 
 .balance-number {
@@ -3113,6 +3196,8 @@ input::placeholder {
   }
 
   .workspace-sidebar {
+    width: min(88vw, 340px);
+    padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-105%);
     transition: transform .18s ease;
   }
@@ -3134,9 +3219,9 @@ input::placeholder {
 
   .mobile-menu-button {
     position: fixed;
-    top: 12px;
+    top: calc(12px + env(safe-area-inset-top));
     left: 14px;
-    z-index: 30;
+    z-index: 38;
     display: inline-flex;
     width: 42px;
     height: 42px;
@@ -3151,7 +3236,7 @@ input::placeholder {
 
   .mobile-close-button {
     position: absolute;
-    top: 14px;
+    top: calc(14px + env(safe-area-inset-top));
     right: 14px;
     display: inline-flex;
     width: 36px;
@@ -3440,7 +3525,7 @@ input::placeholder {
 
   .workspace-topbar {
     min-height: 64px;
-    padding: 12px 14px;
+    padding: 12px 14px 12px 64px;
     align-items: center;
     flex-direction: row;
     gap: 10px;
@@ -3468,8 +3553,7 @@ input::placeholder {
     gap: 0;
   }
 
-  .topbar-actions .icon-link,
-  .mobile-menu-button {
+  .topbar-actions .icon-link {
     display: none;
   }
 
